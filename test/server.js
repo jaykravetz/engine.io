@@ -124,7 +124,7 @@ describe('server', function () {
     });
 
     it('should send additional cookies', function (done) {
-      let engine = listen(function (port) {
+      var engine = listen(function (port) {
         engine.getAdditionalCookies = function (req) {
           return ['additional=1234'];
         };
@@ -135,10 +135,25 @@ describe('server', function () {
             expect(err).to.be(null);
             // hack-obtain sid
             var sid = res.text.match(/"sid":"([^"]+)"/)[1];
-            console.log(res.headers['set-cookie']);
             expect(res.headers['set-cookie'].length).to.be(2);
             expect(res.headers['set-cookie'][0]).to.be('additional=1234');
             expect(res.headers['set-cookie'][1]).to.be('io=' + sid + '; Path=/; HttpOnly');
+            done();
+          });
+      });
+    });
+
+    it('should send additional headers', function (done) {
+      var engine = listen(function (port) {
+        engine.setAdditionalHeaders = function (headers) {
+          headers['x-my-header'] = 'Hello-From-Engine-IO';
+        };
+
+        request.get('http://localhost:%d/engine.io/default/'.s(port))
+          .query({ transport: 'polling', b64: 1 })
+          .end(function (err, res) {
+            expect(err).to.be(null);
+            expect(res.headers['x-my-header']).to.be('Hello-From-Engine-IO');
             done();
           });
       });
